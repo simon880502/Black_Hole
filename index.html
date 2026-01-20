@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Triangle Dot Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .setup-screen, .game-screen {
+            display: none;
+        }
+
+        .setup-screen.active, .game-screen.active {
+            display: block;
+        }
+
+        .setup-group {
+            margin-bottom: 25px;
+        }
+
+        .setup-group label {
+            display: block;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .setup-group select {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .unlock-button {
+            width: 100%;
+            padding: 10px;
+            font-size: 1em;
+            background: #ffa500;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .unlock-button:hover {
+            background: #ff8c00;
+        }
+
+        .unlock-button.show {
+            display: block;
+        }
+
+        .warning-message {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            color: #856404;
+            font-size: 0.95em;
+            display: none;
+        }
+
+        .warning-message.show {
+            display: block;
+        }
+
+        .warning-message strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .start-button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.3em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .start-button:hover {
+            transform: scale(1.05);
+        }
+
+        .start-button:active {
+            transform: scale(0.95);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .current-player {
+            font-size: 1.3em;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: #f0f0f0;
+        }
+
+        .scoreboard {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .player-score {
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1em;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            margin: 20px 0;
+        }
+
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            touch-action: none;
+        }
+
+        .reset-button {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .reset-button:hover {
+            background: #ff5252;
+        }
+
+        .winner-message {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background: #4caf50;
+            color: white;
+            display: none;
+        }
+
+        .winner-message.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .game-info {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .scoreboard {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Triangle Dot Game</h1>
+
+        <div class="setup-screen active">
+            <div class="setup-group">
+                <label for="players">Number of Players:</label>
+                <select id="players">
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4">4 Players</option>
+                    <option value="5">5 Players</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label for="layers">Number of Layers:</label>
+                <select id="layers">
+                    <option value="5">5 Layers</option>
+                    <option value="6">6 Layers</option>
+                    <option value="7">7 Layers</option>
+                    <option value="8">8 Layers</option>
+                    <option value="9">9 Layers</option>
+                    <option value="10">10 Layers</option>
+                </select>
+                <button class="unlock-button" id="unlockButton" onclick="unlockAllLayers()">
+                    🔓 Show All Layer Options (6-10)
+                </button>
+                <div class="warning-message" id="warningMessage">
+                    <strong>⚠️ Warning:</strong>
+                    More than 5 layers may be difficult to play on mobile devices due to smaller circles. We recommend using 5 layers for the best mobile experience.
+                </div>
+            </div>
+            <button class="start-button" onclick="startGame()">Start Game</button>
+        </div>
+
+        <div class="game-screen">
+            <div class="game-info">
+                <div class="current-player" id="currentPlayer">Player 1's Turn</div>
+                <div class="scoreboard" id="scoreboard"></div>
+            </div>
+            <div class="winner-message" id="winnerMessage"></div>
+            <div class="canvas-container">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            <button class="reset-button" onclick="resetGame()">New Game</button>
+        </div>
+    </div>
+
+    <script>
+        const PLAYER_COLORS = [
+            '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7',
+        ];
+
+        let numPlayers = 2;
+        let numLayers = 5;
+        let currentPlayerIndex = 0;
+        let circles = [];
+        let canvas, ctx;
+        let gameOver = false;
+        let scores = [];
+        let currentNumber = 1;
+        let numberUseCount = 0;
+
+        // Detect if device is mobile
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                || window.innerWidth <= 768;
+        }
+
+        class Circle {
+            constructor(x, y, row, col) {
+                this.x = x;
+                this.y = y;
+                this.number = null;
+                this.row = row;
+                this.col = col;
+                this.radius = 25;
+                this.claimed = false;
+                this.owner = -1;
+                this.color = 'white';
+            }
+
+            draw() {
+                // Draw circle
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw number only if circle has been claimed
+                if (this.number !== null) {
+                    ctx.fillStyle = this.color === 'white' || this.color === '#ffeb3b' ? '#333' : 'white';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.number, this.x, this.y);
+                }
+            }
+
+            contains(x, y) {
+                const dx = x - this.x;
+                const dy = y - this.y;
+                return dx * dx + dy * dy <= this.radius * this.radius;
+            }
+
+            claim(playerIndex, number) {
+                this.claimed = true;
+                this.owner = playerIndex;
+                this.number = number;
+                this.color = PLAYER_COLORS[playerIndex];
+            }
+
+            makeBlack() {
+                this.color = 'black';
+            }
+        }
+
+        function startGame() {
+            numPlayers = parseInt(document.getElementById('players').value);
+            numLayers = parseInt(document.getElementById('layers').value);
+
+            document.querySelector('.setup-screen').classList.remove('active');
+            document.querySelector('.game-screen').classList.add('active');
+
+            initializeGame();
+        }
+
+        function initializeGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+
+            // Set canvas size
+            const containerWidth = canvas.parentElement.clientWidth;
+            const canvasSize = Math.min(containerWidth - 40, 700);
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+
+            currentPlayerIndex = 0;
+            gameOver = false;
+            scores = new Array(numPlayers).fill(0);
+            circles = [];
+            currentNumber = 1;
+            numberUseCount = 0;
+
+            createTriangle();
+            updateScoreboard();
+            updateCurrentPlayer();
+            drawGame();
+
+            // Add event listeners
+            canvas.onclick = handleClick;
+            canvas.ontouchend = handleTouch;
+        }
+
+        function createTriangle() {
+            const padding = 60;
+            const spacing = 55;
+            const startY = padding;
+
+            for (let row = 0; row < numLayers; row++) {
+                const numCirclesInRow = row + 1;
+                const rowWidth = (numCirclesInRow - 1) * spacing;
+                const startX = (canvas.width - rowWidth) / 2;
+
+                for (let col = 0; col < numCirclesInRow; col++) {
+                    const x = startX + col * spacing;
+                    const y = startY + row * (spacing * 0.866); // 0.866 for equilateral triangle
+
+                    const circle = new Circle(x, y, row, col);
+                    circles.push(circle);
+                }
+            }
+        }
+
+        function handleClick(e) {
+            if (gameOver) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            processCircleClick(x, y);
+        }
+
+        function handleTouch(e) {
+            if (gameOver) return;
+
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.changedTouches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+
+            processCircleClick(x, y);
+        }
+
+        function processCircleClick(x, y) {
+            for (let circle of circles) {
+                if (!circle.claimed && circle.contains(x, y)) {
+                    // Assign number when clicked
+                    circle.claim(currentPlayerIndex, currentNumber);
+
+                    // Update number counter
+                    numberUseCount++;
+                    if (numberUseCount === numPlayers) {
+                        currentNumber++;
+                        numberUseCount = 0;
+                    }
+
+                    checkEndGame();
+
+                    if (!gameOver) {
+                        nextPlayer();
+                    }
+
+                    drawGame();
+                    updateCurrentPlayer();
+                    updateScoreboard();
+                    break;
+                }
+            }
+        }
+
+        function checkEndGame() {
+            const unclaimedCircles = circles.filter(c => !c.claimed);
+
+            if (unclaimedCircles.length === 1) {
+                // Last circle becomes black
+                const lastCircle = unclaimedCircles[0];
+                lastCircle.claimed = true;
+                lastCircle.makeBlack();
+
+                // Find only the directly neighboring circles (one ring around the black hole)
+                const neighbors = getNeighbors(lastCircle);
+
+                for (let circle of neighbors) {
+                    if (circle.owner >= 0 && circle.number !== null) {
+                        scores[circle.owner] += circle.number;
+                    }
+                }
+
+                gameOver = true;
+                announceWinner();
+            }
+        }
+
+        function getNeighbors(circle) {
+            const neighbors = [];
+
+            for (let other of circles) {
+                if (other === circle) continue;
+
+                const dx = other.x - circle.x;
+                const dy = other.y - circle.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Circles are neighbors if they're approximately one spacing apart
+                if (distance < 60) {
+                    neighbors.push(other);
+                }
+            }
+
+            return neighbors;
+        }
+
+        function nextPlayer() {
+            currentPlayerIndex = (currentPlayerIndex + 1) % numPlayers;
+        }
+
+        function updateCurrentPlayer() {
+            const playerDiv = document.getElementById('currentPlayer');
+            if (!gameOver) {
+                playerDiv.textContent = `Player ${currentPlayerIndex + 1}'s Turn`;
+                playerDiv.style.backgroundColor = PLAYER_COLORS[currentPlayerIndex];
+                playerDiv.style.color = 'white';
+            }
+        }
+
+        function updateScoreboard() {
+            const scoreboard = document.getElementById('scoreboard');
+            scoreboard.innerHTML = '';
+
+            for (let i = 0; i < numPlayers; i++) {
+                const scoreDiv = document.createElement('div');
+                scoreDiv.className = 'player-score';
+                scoreDiv.textContent = `P${i + 1}: ${scores[i]}`;
+                scoreDiv.style.backgroundColor = PLAYER_COLORS[i];
+                scoreDiv.style.color = 'white';
+                scoreboard.appendChild(scoreDiv);
+            }
+        }
+
+        function announceWinner() {
+            const maxScore = Math.max(...scores);
+            const winners = [];
+
+            for (let i = 0; i < numPlayers; i++) {
+                if (scores[i] === maxScore) {
+                    winners.push(i + 1);
+                }
+            }
+
+            const winnerDiv = document.getElementById('winnerMessage');
+            if (winners.length === 1) {
+                winnerDiv.textContent = `🎉 Player ${winners[0]} Wins! 🎉`;
+            } else {
+                winnerDiv.textContent = `🎉 Tie between Players ${winners.join(', ')}! 🎉`;
+            }
+            winnerDiv.classList.add('show');
+        }
+
+        function drawGame() {
+            // Clear canvas
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw connections
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 2;
+            for (let circle of circles) {
+                const neighbors = getNeighbors(circle);
+                for (let neighbor of neighbors) {
+                    if (circles.indexOf(neighbor) > circles.indexOf(circle)) {
+                        ctx.beginPath();
+                        ctx.moveTo(circle.x, circle.y);
+                        ctx.lineTo(neighbor.x, neighbor.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw circles
+            for (let circle of circles) {
+                circle.draw();
+            }
+        }
+
+        function resetGame() {
+            document.querySelector('.game-screen').classList.remove('active');
+            document.querySelector('.setup-screen').classList.add('active');
+            document.getElementById('winnerMessage').classList.remove('show');
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (canvas && circles.length > 0) {
+                const containerWidth = canvas.parentElement.clientWidth;
+                const newSize = Math.min(containerWidth - 40, 700);
+                const scale = newSize / canvas.width;
+
+                canvas.width = newSize;
+                canvas.height = newSize;
+
+                // Rescale circle positions
+                for (let circle of circles) {
+                    circle.x *= scale;
+                    circle.y *= scale;
+                }
+
+                drawGame();
+            }
+        });
+
+        // Unlock all layer options on mobile
+        function unlockAllLayers() {
+            const layersSelect = document.getElementById('layers');
+            const unlockButton = document.getElementById('unlockButton');
+            const warningMessage = document.getElementById('warningMessage');
+
+            // Show all options
+            layersSelect.innerHTML = `
+                <option value="5">5 Layers (Recommended)</option>
+                <option value="6">6 Layers</option>
+                <option value="7">7 Layers</option>
+                <option value="8">8 Layers</option>
+                <option value="9">9 Layers</option>
+                <option value="10">10 Layers</option>
+            `;
+
+            // Hide unlock button
+            unlockButton.classList.remove('show');
+
+            // Show warning
+            warningMessage.classList.add('show');
+
+            // Add change listener to show/hide warning
+            layersSelect.addEventListener('change', function() {
+                if (parseInt(this.value) > 5) {
+                    warningMessage.classList.add('show');
+                } else {
+                    warningMessage.classList.remove('show');
+                }
+            });
+        }
+
+        // Initialize: Set up layer options based on device type
+        window.addEventListener('DOMContentLoaded', () => {
+            const layersSelect = document.getElementById('layers');
+            const unlockButton = document.getElementById('unlockButton');
+            const warningMessage = document.getElementById('warningMessage');
+
+            if (isMobile()) {
+                // Mobile: Default to 5 layers only
+                layersSelect.innerHTML = '<option value="5">5 Layers</option>';
+
+                // Show unlock button
+                unlockButton.classList.add('show');
+            } else {
+                // Desktop: Show all options by default, no unlock button needed
+                unlockButton.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
